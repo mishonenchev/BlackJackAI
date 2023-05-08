@@ -162,6 +162,8 @@ def play_games(agent: BlackjackAgent, num: int):
     
     for i in range(num):
         obs, info = env.reset()
+        env.render()
+        time.sleep(5)
         done = False
         while not done:
             action = agent.get_action(obs)
@@ -174,15 +176,20 @@ def play_games(agent: BlackjackAgent, num: int):
             time.sleep(5) # Add a delay of 5 second
 
        
-# Play 15 games visually
-play_games(agent, 15)
-
-# state values & policy with usable ace (ace counts as 11)
-value_grid, policy_grid = create_grids(agent, usable_ace=True)
-fig1 = create_plots(value_grid, policy_grid, title="With usable ace - Ace can be 11")
-# state values & policy without usable ace (ace counts as 1)
-value_grid, policy_grid = create_grids(agent, usable_ace=False)
-fig2 = create_plots(value_grid, policy_grid, title="Without usable ace - Ace can be only 1")
-# Display figures
-plt.show()
-env.close()
+print("Learing has finished")
+while True:
+    print("Choose Statistics[S] or Play game simulator [P]")
+    input = input()
+    if input == "S":
+        # state values & policy with usable ace (ace counts as 11)
+        value_grid, policy_grid = create_grids(agent, usable_ace=True)
+        fig1 = create_plots(value_grid, policy_grid, title="With usable ace - Ace can be 11")
+        # state values & policy without usable ace (ace counts as 1)
+        value_grid, policy_grid = create_grids(agent, usable_ace=False)
+        fig2 = create_plots(value_grid, policy_grid, title="Without usable ace - Ace can be only 1")
+        # Display figures
+        plt.show()
+    elif input == "P":
+        play_games(agent, 15)
+    elif input == "exit":
+        env.close()

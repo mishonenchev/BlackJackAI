@@ -130,16 +130,23 @@ class BlackjackEnv(gym.Env):
 
         self.render_mode = render_mode
 
+    def getCardImagePath(self, path):
+        if self.isTerminated:
+            return path
+        else:
+            return "Card.png"
+
+
     def step(self, action):
         assert self.action_space.contains(action)
         if action:  # hit: add a card to players hand and return
             self.player.append(draw_card(self.np_random))
             if is_bust(self.player):
-                self.actions.append(f"Player hit {self.player[-1]} and busted")
+                self.actions.append(f"Player HIT {self.player[-1]} and BUSTED")
                 terminated = True
                 reward = -1.0
             else:
-                self.actions.append(f"Player hit {self.player[-1]}")
+                self.actions.append(f"Player HIT {self.player[-1]}")
                 terminated = False
                 reward = 0.0
         else:  # stick: play out the dealers hand, and score
@@ -147,10 +154,10 @@ class BlackjackEnv(gym.Env):
             while sum_hand(self.dealer) < 17:
                 self.dealer.append(draw_card(self.np_random))
             if score(self.player) > score(self.dealer):
-                self.actions.append('Player stand and won')
+                self.actions.append('Player stand and WON')
                 reward = 1.0
             else:
-                self.actions.append('Player stand and lost')
+                self.actions.append('Player stand and LOST')
                 reward = -1.0
             if self.sab and is_natural(self.player) and not is_natural(self.dealer):
                 # Player automatically wins. Rules consistent with S&B
@@ -163,7 +170,7 @@ class BlackjackEnv(gym.Env):
             ):
                 # Natural gives extra points, but doesn't autowin. Legacy implementation
                 reward = 1.5
-
+        self.isTerminated = terminated
         if self.render_mode == "human":
             self.render()
         return self._get_obs(), reward, terminated, False, {}
@@ -180,7 +187,7 @@ class BlackjackEnv(gym.Env):
         self.actions = []
         self.dealer = draw_hand(self.np_random)
         self.player = draw_hand(self.np_random)
-
+        self.isTerminated = False
         _, dealer_card_value, _ = self._get_obs()
 
         suits = ["C", "D", "H", "S"]
@@ -264,9 +271,15 @@ class BlackjackEnv(gym.Env):
         action_font = get_font(
             os.path.join("font", "times.ttf"), screen_height // 30
         )
-        dealer_text = small_font.render(
-            "Dealer: " + str(sum_hand(self.dealer)), True, white
-        )
+        if self.isTerminated: 
+            dealer_text = small_font.render(
+                "Dealer: " + str(sum_hand(self.dealer)), True, white
+            )
+        else:  
+             dealer_text = small_font.render(
+                "Dealer: " + str(self.dealer[0]), True, white
+            )
+       
         dealer_text_rect = self.screen.blit(dealer_text, (spacing, spacing))
 
         def scale_card_img(card_img):
@@ -292,7 +305,7 @@ class BlackjackEnv(gym.Env):
             get_image(
                 os.path.join(
                     "img",
-                    f"{self.dealer_hidden_card_suit}{self.dealer_hidden_card_value_str}.png",
+                    self.getCardImagePath(f"{self.dealer_hidden_card_suit}{self.dealer_hidden_card_value_str}.png"),
                 )
             )
         )
@@ -318,7 +331,7 @@ class BlackjackEnv(gym.Env):
                     get_image(
                         os.path.join(
                             "img",
-                            f"{dealer_draw_card_suit}{dealer_draw_card}.png",
+                            self.getCardImagePath(f"{dealer_draw_card_suit}{dealer_draw_card}.png"),
                         )
                     )
                 )
@@ -365,7 +378,7 @@ class BlackjackEnv(gym.Env):
         action_bottom_rect = aditional_card_rect.bottom
         
         if usable_ace:
-            usable_ace_text = action_font.render("usable ace", True, white)
+            usable_ace_text = small_font.render("usable ace", True, white)
             usable_ace_rect = self.screen.blit(
                 usable_ace_text,
                 (
@@ -403,5 +416,7 @@ class BlackjackEnv(gym.Env):
             pygame.display.quit()
             pygame.quit()
 
+    
+    
 
 # Pixel art from Mariia Khmelnytska (https://www.123rf.com/photo_104453049_stock-vector-pixel-art-playing-cards-standart-deck-vector-set.html)
