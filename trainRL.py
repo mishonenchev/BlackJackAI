@@ -70,7 +70,7 @@ class BlackjackAgent:
         self.epsilon = max(self.final_epsilon, self.epsilon - self.epsilon_decay)
 
 learning_rate = 0.01
-n_episodes = 500_000
+n_episodes = 1_000_000
 start_epsilon = 1.0
 epsilon_decay = start_epsilon / (n_episodes / 2) 
 final_epsilon = 0.1
@@ -273,5 +273,5 @@ while True:
         aiAgent = agent
         print("Training has finished")
         
-    elif input == "exit":
-        env.close()
+    elif user_input == "exit":
+        break
