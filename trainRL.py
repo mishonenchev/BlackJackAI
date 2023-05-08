@@ -237,13 +237,20 @@ while True:
     elif user_input == "T":
         env = gym.make("Blackjack-v1", sab=True)
         env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=n_episodes)
-
+        
+        q_values = None
+        if os.path.isfile("q_values.pkl"):
+            with open("q_values.pkl", "rb") as f:
+                q_values = dill.load(f)
+            
+        
         agent = BlackjackAgent(
             env=env,
             learning_rate=learning_rate,
             initial_epsilon=start_epsilon,
             epsilon_decay=epsilon_decay,
             final_epsilon=final_epsilon,
+            q_values = q_values
         )
 
         for episode in tqdm(range(n_episodes)):
