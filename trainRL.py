@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from collections import defaultdict
+import dill
+import os.path
 import time
 import numpy as np
 import seaborn as sns
@@ -13,14 +15,21 @@ import gym
 class BlackjackAgent:
     def __init__(
         self,
+        env,
         learning_rate: float,
         initial_epsilon: float,
         epsilon_decay: float,
         final_epsilon: float,
         discount_factor: float = 0.95,
+        q_values = None
     ):
-        self.q_values = defaultdict(lambda: np.zeros(env.action_space.n))
+        self.env = env
 
+        if(q_values == None):
+            self.q_values = defaultdict(lambda: np.zeros(self.env.action_space.n))
+        else:
+            self.q_values = q_values
+        
         self.lr = learning_rate
         self.discount_factor = discount_factor
 
@@ -33,7 +42,7 @@ class BlackjackAgent:
     def get_action(self, obs: tuple[int, int, bool]) -> int:
         
         if np.random.random() < self.epsilon:
-            return env.action_space.sample()
+            return self.env.action_space.sample()
 
         else:
             return int(np.argmax(self.q_values[obs]))
@@ -65,30 +74,7 @@ n_episodes = 500_000
 start_epsilon = 1.0
 epsilon_decay = start_epsilon / (n_episodes / 2) 
 final_epsilon = 0.1
-
-agent = BlackjackAgent(
-    learning_rate=learning_rate,
-    initial_epsilon=start_epsilon,
-    epsilon_decay=epsilon_decay,
-    final_epsilon=final_epsilon,
-)
-env = gym.make("Blackjack-v1", sab=True)
-env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=n_episodes)
-
-for episode in tqdm(range(n_episodes)):
-    obs, info = env.reset()
-    done = False
-
-    while not done:
-        action = agent.get_action(obs)
-        next_obs, reward, terminated, truncated, info = env.step(action)
-
-        agent.update(obs, action, reward, terminated, next_obs)
-
-        done = terminated or truncated
-        obs = next_obs
-
-    agent.decay_epsilon()
+aiAgent = None
 
 def create_grids(agent, usable_ace=False):
     state_value = defaultdict(float)
@@ -156,40 +142,89 @@ def create_plots(value_grid, policy_grid, title: str):
     ax2.legend(handles=legend_elements, bbox_to_anchor=(1.3, 1))
     return fig
 
-def play_games(agent: BlackjackAgent, num: int):
-    env = gym.make("Blackjack-v1", sab=True, render_mode='human')
-    env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=n_episodes)
-    
-    for i in range(num):
-        obs, info = env.reset()
-        env.render()
-        time.sleep(5)
-        done = False
-        while not done:
-            action = agent.get_action(obs)
-            next_obs, reward, terminated, truncated, info = env.step(action)
+def play_games(num: int):
+    if os.path.isfile("q_values.pkl"):
+        with open("q_values.pkl", "rb") as f:
+            q_values = dill.load(f)
+        
+        envP = gym.make("Blackjack-v1", sab=True, render_mode='human')
+        envP = gym.wrappers.RecordEpisodeStatistics(envP, deque_size=n_episodes)
 
-            done = terminated or truncated
-            obs = next_obs
-            
-            env.render()
-            time.sleep(5) # Add a delay of 5 second
+        agentP = BlackjackAgent(
+            env=envP,
+            learning_rate=learning_rate,
+            initial_epsilon=start_epsilon,
+            epsilon_decay=epsilon_decay,
+            final_epsilon=final_epsilon,
+            q_values=q_values
+        )
+        
+        for i in range(num):
+            obs, info = envP.reset()
+            envP.render()
+            time.sleep(5)
+            done = False
+            while not done:
+                action = agentP.get_action(obs)
+                next_obs, reward, terminated, truncated, info = envP.step(action)
 
-       
-print("Learing has finished")
+                done = terminated or truncated
+                obs = next_obs
+                
+                envP.render()
+                time.sleep(5) # Add a delay of 5 second   
+        envP.close() 
+    else:
+        print("File 'q_values.pkl' does not exist. Train AI first!")
+
 while True:
-    print("Choose Statistics[S] or Play game simulator [P]")
-    input = input()
-    if input == "S":
-        # state values & policy with usable ace (ace counts as 11)
-        value_grid, policy_grid = create_grids(agent, usable_ace=True)
-        fig1 = create_plots(value_grid, policy_grid, title="With usable ace - Ace can be 11")
-        # state values & policy without usable ace (ace counts as 1)
-        value_grid, policy_grid = create_grids(agent, usable_ace=False)
-        fig2 = create_plots(value_grid, policy_grid, title="Without usable ace - Ace can be only 1")
-        # Display figures
-        plt.show()
-    elif input == "P":
-        play_games(agent, 15)
+    print("Choose: Train[T], Statistics[S] or Play game simulator[P]")
+    user_input = input()
+    if user_input == "S":
+        if(aiAgent != None):
+            # state values & policy with usable ace (ace counts as 11)
+            value_grid, policy_grid = create_grids(aiAgent, usable_ace=True)
+            fig1 = create_plots(value_grid, policy_grid, title="With usable ace - Ace can be 11")
+            # state values & policy without usable ace (ace counts as 1)
+            value_grid, policy_grid = create_grids(aiAgent, usable_ace=False)
+            fig2 = create_plots(value_grid, policy_grid, title="Without usable ace - Ace can be only 1")
+            # Display figures
+            plt.show()
+        else:
+            print("Can't display statistics. Train AI first!")
+    elif user_input == "P":
+        play_games(15)
+    elif user_input == "T":
+        env = gym.make("Blackjack-v1", sab=True)
+        env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=n_episodes)
+
+        agent = BlackjackAgent(
+            env=env,
+            learning_rate=learning_rate,
+            initial_epsilon=start_epsilon,
+            epsilon_decay=epsilon_decay,
+            final_epsilon=final_epsilon,
+        )
+
+        for episode in tqdm(range(n_episodes)):
+            obs, info = env.reset()
+            done = False
+
+            while not done:
+                action = agent.get_action(obs)
+                next_obs, reward, terminated, truncated, info = env.step(action)
+
+                agent.update(obs, action, reward, terminated, next_obs)
+
+                done = terminated or truncated
+                obs = next_obs
+
+            agent.decay_epsilon()
+
+        with open("q_values.pkl", "wb") as f:
+            dill.dump(agent.q_values, f)
+        aiAgent = agent
+        print("Training has finished")
+        
     elif input == "exit":
         env.close()
