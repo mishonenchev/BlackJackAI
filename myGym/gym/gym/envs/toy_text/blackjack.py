@@ -156,6 +156,9 @@ class BlackjackEnv(gym.Env):
             if score(self.player) > score(self.dealer):
                 self.actions.append('Player stand and WON')
                 reward = 1.0
+            elif score(self.player) == score(self.dealer): 
+                self.actions.append('Player stand and DRAW')
+                reward = 0.0
             else:
                 self.actions.append('Player stand and LOST')
                 reward = -1.0

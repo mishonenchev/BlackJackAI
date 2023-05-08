@@ -70,7 +70,7 @@ class BlackjackAgent:
         self.epsilon = max(self.final_epsilon, self.epsilon - self.epsilon_decay)
 
 learning_rate = 0.01
-n_episodes = 10_000
+n_episodes = 500_000
 start_epsilon = 1.0
 epsilon_decay = start_epsilon / (n_episodes / 2) 
 final_epsilon = 0.1
@@ -153,7 +153,7 @@ def play_games(num: int):
         agentP = BlackjackAgent(
             env=envP,
             learning_rate=learning_rate,
-            initial_epsilon=start_epsilon,
+            initial_epsilon=0,
             epsilon_decay=epsilon_decay,
             final_epsilon=final_epsilon,
             q_values=q_values
@@ -188,7 +188,7 @@ def play_test_games(num: int):
     agentPB = BlackjackAgent(
             env=envPB,
             learning_rate=learning_rate,
-            initial_epsilon=start_epsilon,
+            initial_epsilon=0,
             epsilon_decay=epsilon_decay,
             final_epsilon=final_epsilon,
             q_values=q_values
@@ -206,12 +206,12 @@ def play_test_games(num: int):
             done = terminated or truncated
             obs = next_obs
         
-        if reward == 0:
-            timesDraw = timesDraw+1
+        if reward == -1:
+            timesLost = timesLost+1
         elif reward == 1:
             timesWon = timesWon +1
         else:
-            timesLost =timesLost+1
+            timesDraw =timesDraw+1
     print(f"Wins: {timesWon}, Lost: {timesLost}, Draw: {timesDraw}")
 
 
