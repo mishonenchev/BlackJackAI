@@ -70,7 +70,7 @@ class BlackjackAgent:
         self.epsilon = max(self.final_epsilon, self.epsilon - self.epsilon_decay)
 
 learning_rate = 0.01
-n_episodes = 500_000
+n_episodes = 10_000
 start_epsilon = 1.0
 epsilon_decay = start_epsilon / (n_episodes / 2) 
 final_epsilon = 0.1
@@ -177,8 +177,46 @@ def play_games(num: int):
     else:
         print("File 'q_values.pkl' does not exist. Train AI first!")
 
+def play_test_games(num: int):
+    q_values = None
+    if os.path.isfile("q_values.pkl"):
+        with open("q_values.pkl", "rb") as f:
+            q_values = dill.load(f)
+    envPB = gym.make("Blackjack-v1", sab=True)
+    envPB = gym.wrappers.RecordEpisodeStatistics(envPB, deque_size=n_episodes)
+
+    agentPB = BlackjackAgent(
+            env=envPB,
+            learning_rate=learning_rate,
+            initial_epsilon=start_epsilon,
+            epsilon_decay=epsilon_decay,
+            final_epsilon=final_epsilon,
+            q_values=q_values
+    )
+    timesWon = 0
+    timesLost = 0
+    timesDraw = 0
+    for i in range(num):
+        obs, info = envPB.reset()
+        done = False
+        while not done:
+            action = agentPB.get_action(obs)
+            next_obs, reward, terminated, truncated, info = envPB.step(action)
+
+            done = terminated or truncated
+            obs = next_obs
+        
+        if reward == 0:
+            timesDraw = timesDraw+1
+        elif reward == 1:
+            timesWon = timesWon +1
+        else:
+            timesLost =timesLost+1
+    print(f"Wins: {timesWon}, Lost: {timesLost}, Draw: {timesDraw}")
+
+
 while True:
-    print("Choose: Train[T], Statistics[S] or Play game simulator[P]")
+    print("Choose: Train[T], Statistics[S], Play game simulator[P], Bulk Test[B]")
     user_input = input()
     if user_input == "S":
         if(aiAgent != None):
@@ -194,6 +232,8 @@ while True:
             print("Can't display statistics. Train AI first!")
     elif user_input == "P":
         play_games(15)
+    elif user_input == "B":
+        play_test_games(1000)
     elif user_input == "T":
         env = gym.make("Blackjack-v1", sab=True)
         env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=n_episodes)
