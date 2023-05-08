@@ -61,7 +61,7 @@ class BlackjackAgent:
         self.epsilon = max(self.final_epsilon, self.epsilon - self.epsilon_decay)
 
 learning_rate = 0.01
-n_episodes = 100_00
+n_episodes = 500_000
 start_epsilon = 1.0
 epsilon_decay = start_epsilon / (n_episodes / 2) 
 final_epsilon = 0.1
@@ -72,8 +72,6 @@ agent = BlackjackAgent(
     epsilon_decay=epsilon_decay,
     final_epsilon=final_epsilon,
 )
-
-# render_mode='human' for display
 env = gym.make("Blackjack-v1", sab=True)
 env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=n_episodes)
 
@@ -158,11 +156,11 @@ def create_plots(value_grid, policy_grid, title: str):
     ax2.legend(handles=legend_elements, bbox_to_anchor=(1.3, 1))
     return fig
 
-def play_game(agent: BlackjackAgent):
+def play_games(agent: BlackjackAgent, num: int):
     env = gym.make("Blackjack-v1", sab=True, render_mode='human')
     env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=n_episodes)
     
-    for i in range(10):
+    for i in range(num):
         obs, info = env.reset()
         done = False
         while not done:
@@ -176,8 +174,8 @@ def play_game(agent: BlackjackAgent):
             time.sleep(5) # Add a delay of 5 second
 
        
-
-play_game(agent)
+# Play 15 games visually
+play_games(agent, 15)
 
 # state values & policy with usable ace (ace counts as 11)
 value_grid, policy_grid = create_grids(agent, usable_ace=True)
@@ -185,5 +183,6 @@ fig1 = create_plots(value_grid, policy_grid, title="With usable ace - Ace can be
 # state values & policy without usable ace (ace counts as 1)
 value_grid, policy_grid = create_grids(agent, usable_ace=False)
 fig2 = create_plots(value_grid, policy_grid, title="Without usable ace - Ace can be only 1")
+# Display figures
 plt.show()
 env.close()
