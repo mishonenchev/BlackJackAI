@@ -188,9 +188,9 @@ def play_test_games(num: int):
     agentPB = BlackjackAgent(
             env=envPB,
             learning_rate=learning_rate,
-            initial_epsilon=0,
+            initial_epsilon=1,
             epsilon_decay=epsilon_decay,
-            final_epsilon=final_epsilon,
+            final_epsilon=1,
             q_values=q_values
     )
     timesWon = 0
@@ -233,7 +233,7 @@ while True:
     elif user_input == "P":
         play_games(15)
     elif user_input == "B":
-        play_test_games(1000)
+        play_test_games(10000)
     elif user_input == "T":
         env = gym.make("Blackjack-v1", sab=True)
         env = gym.wrappers.RecordEpisodeStatistics(env, deque_size=n_episodes)
